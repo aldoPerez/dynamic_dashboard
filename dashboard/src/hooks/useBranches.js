@@ -8,7 +8,7 @@ export function useBranches() {
   useEffect(() => {
     supabase
       .from('my_branches')
-      .select('id, branch_id, name, pos_system')
+      .select('id, branch_id, name, db_type')
       .order('name')
       .then(({ data }) => {
         setBranches(data ?? [])

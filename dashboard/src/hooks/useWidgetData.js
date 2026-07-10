@@ -18,7 +18,7 @@ export function useWidgetData({ branchId, widgets, dateFrom, dateTo }) {
 
     // Recopilar qué dataTypes necesitan los widgets actuales
     const neededTypes = [...new Set(
-      widgets.map(l => l.dashboard_widgets?.data_type_queries?.data_types?.key).filter(Boolean)
+      widgets.map(l => l.dashboard_widgets?.data_types?.key).filter(Boolean)
     )]
     if (neededTypes.length === 0) return
 

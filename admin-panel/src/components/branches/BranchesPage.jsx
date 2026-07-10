@@ -112,7 +112,7 @@ function BranchRow({ branch, dbStatus, canWrite, onEdit, onDbConfig, onToggle, o
     <tr className={!branch.active ? 'row-inactive' : ''}>
       <td><code className="branch-id">{branch.branch_id}</code></td>
       <td><strong>{branch.name}</strong>{branch.notes && <p className="row-notes">{branch.notes}</p>}</td>
-      <td><span className={`badge badge-pos badge-${branch.pos_system}`}>{branch.pos_system === 'softrestaurante' ? 'SoftRest.' : 'Squirrel'}</span></td>
+      <td><span className={`badge badge-pos badge-${branch.db_type}`}>{branch.db_type === 'sqlserver' ? 'SQL Server' : branch.db_type === 'mysql' ? 'MySQL' : 'PostgreSQL'}</span></td>
       <td><DbStatusBadge dbStatus={dbStatus} /></td>
       <td>
         <div className="api-key-cell">

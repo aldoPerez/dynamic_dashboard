@@ -19,7 +19,7 @@ export default function ConnectionsPage() {
   const esRef = useRef(null)
 
   useEffect(() => {
-    supabase.from('branches').select('branch_id,name,pos_system,active').order('name')
+    supabase.from('branches').select('branch_id,name,db_type,active').order('name')
       .then(({ data }) => setBranches(data ?? []))
   }, [])
 
@@ -77,7 +77,7 @@ export default function ConnectionsPage() {
                 <div key={b.branch_id} className="conn-card conn-card--online">
                   <div className="conn-card-header">
                     <div><div className="conn-card-name">{b.name}</div><code style={{ fontSize:11, color:'var(--text-3)' }}>{b.branch_id}</code></div>
-                    <span className={`badge badge-pos badge-${b.pos_system}`}>{b.pos_system === 'softrestaurante' ? 'SoftRest.' : 'Squirrel'}</span>
+                    <span className={`badge badge-pos badge-${b.db_type}`}>{b.db_type === 'sqlserver' ? 'SQL Server' : b.db_type === 'mysql' ? 'MySQL' : 'PostgreSQL'}</span>
                   </div>
                   <div className="conn-meta">
                     <div className="conn-meta-row"><span className="conn-meta-label">Versión</span><span>{conn?.version ?? '—'}</span></div>
@@ -108,7 +108,7 @@ export default function ConnectionsPage() {
               <div key={b.branch_id} className="conn-card conn-card--offline">
                 <div className="conn-card-header">
                   <div><div className="conn-card-name">{b.name}</div><code style={{ fontSize:11, color:'var(--text-3)' }}>{b.branch_id}</code></div>
-                  <span className={`badge badge-pos badge-${b.pos_system}`}>{b.pos_system === 'softrestaurante' ? 'SoftRest.' : 'Squirrel'}</span>
+                  <span className={`badge badge-pos badge-${b.db_type}`}>{b.db_type === 'sqlserver' ? 'SQL Server' : b.db_type === 'mysql' ? 'MySQL' : 'PostgreSQL'}</span>
                 </div>
                 <div className="conn-offline-msg">Sin conexión — el cliente no está corriendo o hay un error de red</div>
               </div>

@@ -5,7 +5,7 @@ import { encrypt } from '../../lib/crypto'
 const DB_DEFAULTS = { softrestaurante: { database:'SoftRestaurante' }, squirrel: { database:'SquirrelPOS' } }
 
 export default function DbConfigModal({ branch, onClose, onSaved }) {
-  const [form, setForm] = useState({ db_server:'localhost\\SQLEXPRESS', db_port:1433, db_database:DB_DEFAULTS[branch.pos_system]?.database ?? '', db_user:'sa', db_password:'', db_encrypt:false, db_trust_cert:true })
+  const [form, setForm] = useState({ db_server:'localhost\\SQLEXPRESS', db_port:1433, db_database:DB_DEFAULTS[branch.db_type]?.database ?? '', db_user:'sa', db_password:'', db_encrypt:false, db_trust_cert:true })
   const [hasExisting, setHasExisting] = useState(false)
   const [saving,  setSaving]  = useState(false)
   const [testing, setTesting] = useState(false)
