@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 
-const SERVER_URL    = import.meta.env.VITE_SERVER_URL
+const SERVER_URL = import.meta.env.VITE_SERVER_URL
 const DASHBOARD_KEY = import.meta.env.VITE_DASHBOARD_KEY
 
 /**
@@ -8,9 +8,9 @@ const DASHBOARD_KEY = import.meta.env.VITE_DASHBOARD_KEY
  * Agrupa todas las dataTypes necesarias en una sola llamada por sucursal.
  */
 export function useWidgetData({ branchId, widgets, dateFrom, dateTo }) {
-  const [data,    setData]    = useState({})   // { dataTypeKey: rows[] }
+  const [data, setData] = useState({})   // { dataTypeKey: rows[] }
   const [loading, setLoading] = useState(false)
-  const [error,   setError]   = useState(null)
+  const [error, setError] = useState(null)
   const esRef = useRef(null)
 
   const fetch = useCallback(() => {
@@ -33,6 +33,7 @@ export function useWidgetData({ branchId, widgets, dateFrom, dateTo }) {
       dateFrom,
       dateTo: addDay(dateTo),
       dataTypes: neededTypes.join(','),
+      key: DASHBOARD_KEY,  // ← mandar como query param
     })
 
     const es = new EventSource(
@@ -76,19 +77,22 @@ export function useWidgetData({ branchId, widgets, dateFrom, dateTo }) {
  */
 export function useLiveData(branchId) {
   const [liveData, setLiveData] = useState(null)
-  const [loading,  setLoading]  = useState(false)
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     if (!branchId) return
     async function fetchLive() {
       setLoading(true)
       try {
+        const params = new URLSearchParams({
+          branchId,
+          key: DASHBOARD_KEY,
+        })
         const res = await globalThis.fetch(
-          `${SERVER_URL}/api/live?branchId=${branchId}`,
-          { headers: { 'x-api-key': DASHBOARD_KEY } }
+          `${SERVER_URL}/api/live?${params}`
         )
         if (res.ok) { const json = await res.json(); setLiveData(json.data) }
-      } catch {}
+      } catch { }
       setLoading(false)
     }
     fetchLive()

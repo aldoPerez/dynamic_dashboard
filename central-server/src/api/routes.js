@@ -1,13 +1,14 @@
-const registry     = require('../ws/registry')
+const registry = require('../ws/registry')
 const queryManager = require('../ws/queryManager')
-const configStore  = require('../utils/configStore')
-const auth         = require('../utils/auth')
-const logger       = require('../utils/logger')
+const configStore = require('../utils/configStore')
+const auth = require('../utils/auth')
+const logger = require('../utils/logger')
 
 function registerRoutes(fastify) {
   fastify.addHook('onRequest', async (req, reply) => {
     if (!req.url.startsWith('/api/')) return
-    if (!auth.validateDashboard(req.headers['x-api-key']))
+    const key = req.headers['x-api-key'] || req.query?.key
+    if (!key || key !== process.env.DASHBOARD_KEY)
       reply.code(401).send({ error: 'No autorizado' })
   })
 
@@ -44,13 +45,13 @@ function registerRoutes(fastify) {
       ? req.query.branchId.split(',').map(s => s.trim())
       : registry.getAll().map(b => b.branchId)
 
-    const connected    = branchIds.filter(id => registry.isConnected(id))
+    const connected = branchIds.filter(id => registry.isConnected(id))
     const disconnected = branchIds.filter(id => !registry.isConnected(id))
 
     reply.raw.writeHead(200, {
-      'Content-Type':  'text/event-stream',
+      'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
-      'Connection':    'keep-alive',
+      'Connection': 'keep-alive',
       'X-Accel-Buffering': 'no',
     })
 
@@ -78,7 +79,7 @@ function registerRoutes(fastify) {
       onError(branchId, error) { sse('branch_error', { branchId, error }) },
       onComplete() {
         sse('done', {
-          queriedBranches:      connected.length,
+          queriedBranches: connected.length,
           disconnectedBranches: disconnected.length,
         })
         reply.raw.end()
