@@ -43,7 +43,8 @@ export function useLayout(branchId) {
       .eq('visible', true)
       .order('sort_order')
       .then(({ data, error }) => {
-        if (error) console.error('Error cargando layout:', error.message)
+        console.log('Layout raw:', JSON.stringify(data))
+        console.log('Layout error:', error)
         setWidgets((data ?? []).filter(l => l.dashboard_widgets?.data_types))
         setLoading(false)
       })
