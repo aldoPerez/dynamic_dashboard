@@ -1,96 +1,50 @@
 import { useState } from 'react'
-import { supabase } from '../lib/supabase'
 
-const SERVER_URL = import.meta.env.VITE_SERVER_URL
+const SERVER_URL    = import.meta.env.VITE_SERVER_URL
 const DASHBOARD_KEY = import.meta.env.VITE_DASHBOARD_KEY
 
-const INSTALL_BAT = `@echo off
-SET SERVICE_NAME=BranchClient
-SET EXE_PATH=%~dp0branch-client.exe
-IF NOT EXIST "%EXE_PATH%" ( echo [ERROR] No se encontro branch-client.exe & pause & exit /b 1 )
-IF NOT EXIST "%~dp0config.json" ( echo [ERROR] No se encontro config.json & pause & exit /b 1 )
-SC query %SERVICE_NAME% >nul 2>&1
-IF %ERRORLEVEL% == 0 ( SC stop %SERVICE_NAME% >nul 2>&1 & timeout /t 3 /nobreak >nul & SC delete %SERVICE_NAME% >nul 2>&1 & timeout /t 2 /nobreak >nul )
-SC create %SERVICE_NAME% binPath= "\"%EXE_PATH%\"" DisplayName= "Branch Client - Sync de Ventas" start= auto obj= LocalSystem
-IF %ERRORLEVEL% NEQ 0 ( echo [ERROR] Ejecuta como Administrador. & pause & exit /b 1 )
-SC description %SERVICE_NAME% "Sincroniza ventas en tiempo real con el servidor central"
-SC failure %SERVICE_NAME% reset= 60 actions= restart/5000/restart/10000/restart/30000
-SC start %SERVICE_NAME%
-IF %ERRORLEVEL% NEQ 0 ( echo [WARN] Creado pero no pudo iniciarse. Revisa logs\. ) ELSE ( echo [OK] Instalado correctamente. )
-pause`
-
-const UNINSTALL_BAT = `@echo off
-SET SERVICE_NAME=BranchClient
-SC query %SERVICE_NAME% >nul 2>&1
-IF %ERRORLEVEL% NEQ 0 ( echo [INFO] No instalado. & pause & exit /b 0 )
-SC stop %SERVICE_NAME% >nul 2>&1 & timeout /t 3 /nobreak >nul
-SC delete %SERVICE_NAME%
-IF %ERRORLEVEL% == 0 ( echo [OK] Eliminado. ) ELSE ( echo [ERROR] Ejecuta como Administrador. )
-pause`
-
 export function useDownloadPackage() {
-  const [status, setStatus] = useState('idle')
+  const [status,   setStatus]   = useState('idle')
   const [progress, setProgress] = useState('')
-  const [error, setError] = useState(null)
+  const [error,    setError]    = useState(null)
 
   async function download(branch) {
-    setStatus('downloading'); setProgress('Obteniendo configuración...'); setError(null)
-    try {
-      const JSZip = (await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm')).default
+    setStatus('downloading')
+    setProgress('Generando paquete de instalación...')
+    setError(null)
 
-      const configRes = await fetch(
-        `${SERVER_URL}/api/branches/${branch.branch_id}/package-config`,
+    try {
+      // El servidor arma el ZIP completo (config + exe) y lo devuelve directamente
+      // Evita todos los problemas de CORS con Supabase Storage desde el browser
+      const res = await fetch(
+        `${SERVER_URL}/api/branches/${branch.branch_id}/download-package`,
         { headers: { 'x-api-key': DASHBOARD_KEY } }
       )
-      if (!configRes.ok) {
-        const err = await configRes.json().catch(() => ({}))
-        throw new Error(err.error || `Error del servidor: ${configRes.status}`)
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error || `Error del servidor: ${res.status}`)
       }
-      const { config } = await configRes.json()
 
-      setProgress('Descargando ejecutable...')
+      setProgress('Descargando...')
+      setStatus('generating')
 
-      // URL firmada temporal — evita ERR_FAILED 206 con archivos grandes
-      const { data: signedData, error: signedErr } = await supabase
-        .storage
-        .from('releases')
-        .createSignedUrl('branch-client.zip', 120)
+      const blob = await res.blob()
 
-      if (signedErr) throw new Error(`Error generando URL: ${signedErr.message}`)
-
-      const fetchRes = await fetch(signedData.signedUrl)
-      if (!fetchRes.ok) throw new Error(`Error descargando: ${fetchRes.status}`)
-
-      const releaseZip = await fetchRes.blob()
-
-      // Descomprimir para sacar el exe
-      const JSZipInner = (await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm')).default
-      const innerZip = await JSZipInner.loadAsync(releaseZip)
-      const exeFile = innerZip.file('branch-client.exe')
-      if (!exeFile) throw new Error('No se encontró branch-client.exe dentro del zip.')
-      const exeBlob = await exeFile.async('blob')
-      setProgress('Generando paquete...'); setStatus('generating')
-
-      const zip = new JSZip()
-      const folder = zip.folder(`${branch.branch_id}-client`)
-      folder.file('branch-client.exe', exeBlob)
-      folder.file('config.json', JSON.stringify(config, null, 2))
-      folder.file('install-service.bat', INSTALL_BAT)
-      folder.file('uninstall-service.bat', UNINSTALL_BAT)
-      folder.file('INSTALACION.md', `# Branch Client\n## Sucursal: ${branch.name} (${branch.branch_id})\n\n1. Clic derecho en install-service.bat\n2. Ejecutar como Administrador\n3. Revisar logs/ para verificar conexión`)
-
-      const zipBlob = await zip.generateAsync(
-        { type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } },
-        ({ percent }) => setProgress(`Comprimiendo... ${Math.round(percent)}%`)
-      )
-
-      const url = URL.createObjectURL(zipBlob)
+      // Descargar el zip en el browser
+      const url  = URL.createObjectURL(blob)
       const link = document.createElement('a')
-      link.href = url; link.download = `${branch.branch_id}-client.zip`
-      link.click(); URL.revokeObjectURL(url)
+      link.href     = url
+      link.download = `${branch.branch_id}-client.zip`
+      link.click()
+      URL.revokeObjectURL(url)
 
-      setStatus('done'); setProgress('')
-    } catch (err) { setError(err.message); setStatus('error') }
+      setStatus('done')
+      setProgress('')
+    } catch (err) {
+      setError(err.message)
+      setStatus('error')
+    }
   }
 
   function reset() { setStatus('idle'); setProgress(''); setError(null) }
