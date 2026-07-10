@@ -1,22 +1,27 @@
 import { useState, useEffect } from 'react'
 import { AuthProvider, useAuth } from './hooks/useAuth'
-import { useBranches } from './hooks/useBranches'
-import { useLayout } from './hooks/useLayout'
+import { useBranches }           from './hooks/useBranches'
+import { useLayout }             from './hooks/useLayout'
 import { useWidgetData, useLiveData } from './hooks/useWidgetData'
-import WidgetRenderer from './components/widgets/WidgetRenderer'
+import WidgetRenderer            from './components/widgets/WidgetRenderer'
 import './styles.css'
 
 const PERIODS = [
-  { label: 'Hoy', days: 0 },
-  { label: '7d', days: 7 },
-  { label: '15d', days: 15 },
-  { label: '30d', days: 30 },
+  { label:'Hoy', days:0  },
+  { label:'7d',  days:7  },
+  { label:'15d', days:15 },
+  { label:'30d', days:30 },
 ]
 
-function todayStr() { return new Date().toISOString().slice(0, 10) }
-function addDays(str, d) { const dt = new Date(str); dt.setDate(dt.getDate() + d); return dt.toISOString().slice(0, 10) }
+function todayStr() { return new Date().toISOString().slice(0,10) }
+function addDays(str, d) { const dt = new Date(str); dt.setDate(dt.getDate()+d); return dt.toISOString().slice(0,10) }
 
-const WIDTH_COLS = { '1/3': 'widget-col-2', '1/2': 'widget-col-3', '2/3': 'widget-col-4', 'full': 'widget-col-6' }
+const WIDTH_COLS = {
+  '1/3': 'widget-col-2',
+  '1/2': 'widget-col-3',
+  '2/3': 'widget-col-4',
+  'full':'widget-col-6',
+}
 
 export default function App() {
   return <AuthProvider><AppInner /></AuthProvider>
@@ -24,18 +29,21 @@ export default function App() {
 
 function AppInner() {
   const { user, loading, signOut } = useAuth()
-  if (loading) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f1117', color: '#8892a4' }}>Cargando...</div>
+  if (loading) return (
+    <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#0f1117', color:'#8892a4' }}>
+      Cargando...
+    </div>
+  )
   if (!user) return <Login />
   return <Dashboard onSignOut={signOut} userEmail={user.email} />
 }
 
-// ── Login ─────────────────────────────────────────────────────────────────────
 function Login() {
   const { signIn } = useAuth()
-  const [email, setEmail] = useState('')
+  const [email,    setEmail]    = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState(null)
-  const [loading, setLoading] = useState(false)
+  const [error,    setError]    = useState(null)
+  const [loading,  setLoading]  = useState(false)
 
   async function handleLogin() {
     setLoading(true); setError(null)
@@ -57,7 +65,10 @@ function Login() {
         </div>
         <div className="login-field">
           <label>Contraseña</label>
-          <input type="password" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLogin()} placeholder="••••••••" />
+          <input type="password" value={password}
+            onChange={e => setPassword(e.target.value)}
+            onKeyDown={e => e.key==='Enter' && handleLogin()}
+            placeholder="••••••••" />
         </div>
         {error && <p className="login-error">⚠️ {error}</p>}
         <button className="login-btn" onClick={handleLogin} disabled={loading || !email}>
@@ -68,23 +79,34 @@ function Login() {
   )
 }
 
-// ── Dashboard ─────────────────────────────────────────────────────────────────
 function Dashboard({ onSignOut, userEmail }) {
   const { branches, loading: loadingBranches } = useBranches()
-  const [selectedBranch, setSelectedBranch] = useState('')
-  const [period, setPeriod] = useState(0)
-  const [dateFrom, setDateFrom] = useState(todayStr())
-  const [dateTo, setDateTo] = useState(todayStr())
-  const [custom, setCustom] = useState(false)
-  const [sidebarOpen, setSidebarOpen] = useState(false)
 
-  const { widgets, loading: loadingLayout } = useLayout(selectedBranch)
-  const { data, loading: loadingData, error, refetch } = useWidgetData({ branchId: selectedBranch, widgets, dateFrom, dateTo })
-  const { liveData } = useLiveData(selectedBranch)
+  // selectedBranch guarda el objeto completo de la sucursal
+  const [selectedBranch, setSelectedBranch] = useState(null)
+  const [period,         setPeriod]          = useState(0)
+  const [dateFrom,       setDateFrom]        = useState(todayStr())
+  const [dateTo,         setDateTo]          = useState(todayStr())
+  const [custom,         setCustom]          = useState(false)
+  const [sidebarOpen,    setSidebarOpen]     = useState(false)
+
+  // useLayout usa el UUID (id) para el JOIN con Supabase
+  const { widgets, loading: loadingLayout } = useLayout(selectedBranch?.id)
+
+  // useWidgetData y useLiveData usan branch_id (texto) para el servidor
+  const { data, loading: loadingData, error, refetch } = useWidgetData({
+    branchId: selectedBranch?.branch_id,
+    widgets,
+    dateFrom,
+    dateTo,
+  })
+  const { liveData } = useLiveData(selectedBranch?.branch_id)
 
   // Auto-seleccionar primera sucursal
   useEffect(() => {
-    if (branches.length > 0 && !selectedBranch) setSelectedBranch(branches[0].id)
+    if (branches.length > 0 && !selectedBranch) {
+      setSelectedBranch(branches[0])
+    }
   }, [branches])
 
   // Cambio de período
@@ -95,20 +117,22 @@ function Dashboard({ onSignOut, userEmail }) {
     else { setDateFrom(addDays(today, -PERIODS[period].days)); setDateTo(today) }
   }, [period, custom])
 
-  const branch = branches.find(b => b.id === selectedBranch)
   const loading = loadingBranches || loadingLayout
 
   return (
     <div className="app">
       {/* Overlay mobile */}
-      <div className={`sidebar-overlay ${sidebarOpen ? 'open' : ''}`} onClick={() => setSidebarOpen(false)} />
+      <div
+        className={`sidebar-overlay ${sidebarOpen ? 'open' : ''}`}
+        onClick={() => setSidebarOpen(false)}
+      />
 
       {/* Sidebar */}
       <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-brand">
           <div className="sidebar-brand-icon">📊</div>
           <div>
-            <div className="sidebar-brand-text">{branch?.name ?? 'Dashboard'}</div>
+            <div className="sidebar-brand-text">{selectedBranch?.name ?? 'Dashboard'}</div>
             <div className="sidebar-brand-sub">Sistema de Ventas</div>
           </div>
         </div>
@@ -116,15 +140,17 @@ function Dashboard({ onSignOut, userEmail }) {
           <div className="nav-section">Sucursales</div>
           {branches.map(b => (
             <div key={b.id}
-              className={`nav-item ${selectedBranch === b.id ? 'active' : ''}`}
-              onClick={() => { setSelectedBranch(b.id); setSidebarOpen(false) }}
+              className={`nav-item ${selectedBranch?.id === b.id ? 'active' : ''}`}
+              onClick={() => { setSelectedBranch(b); setSidebarOpen(false) }}
             >
               <span className="nav-icon">🏪</span>
-              <span style={{ flex: 1 }}>{b.name}</span>
+              <span style={{ flex:1 }}>{b.name}</span>
             </div>
           ))}
           {branches.length === 0 && !loadingBranches && (
-            <div style={{ padding: '12px 16px', fontSize: 12, color: 'var(--text-3)' }}>Sin sucursales asignadas</div>
+            <div style={{ padding:'12px 16px', fontSize:12, color:'var(--text-3)' }}>
+              Sin sucursales asignadas
+            </div>
           )}
         </nav>
         <div className="sidebar-footer">
@@ -137,29 +163,32 @@ function Dashboard({ onSignOut, userEmail }) {
       <div className="main">
         {/* Topbar */}
         <div className="topbar">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
             <button className="menu-btn" onClick={() => setSidebarOpen(v => !v)}>☰</button>
             <div className="topbar-left">
               <h1>Dashboard</h1>
-              <p>{branch?.name ?? 'Selecciona una sucursal'}</p>
+              <p>{selectedBranch?.name ?? 'Selecciona una sucursal'}</p>
             </div>
           </div>
           <div className="topbar-controls">
-            {/* Períodos */}
             <div className="period-tabs">
               {PERIODS.map((p, i) => (
-                <button key={p.label} className={`period-tab ${!custom && period === i ? 'active' : ''}`}
-                  onClick={() => { setPeriod(i); setCustom(false) }}>
+                <button key={p.label}
+                  className={`period-tab ${!custom && period===i ? 'active' : ''}`}
+                  onClick={() => { setPeriod(i); setCustom(false) }}
+                >
                   {p.label}
                 </button>
               ))}
             </div>
-            {/* Fechas */}
-            <input type="date" className="date-input" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setCustom(true) }} />
-            <input type="date" className="date-input" value={dateTo} onChange={e => { setDateTo(e.target.value); setCustom(true) }} />
-            {/* Refresh */}
+            <input type="date" className="date-input" value={dateFrom}
+              onChange={e => { setDateFrom(e.target.value); setCustom(true) }} />
+            <input type="date" className="date-input" value={dateTo}
+              onChange={e => { setDateTo(e.target.value); setCustom(true) }} />
             <button className="btn-refresh" onClick={refetch} disabled={loadingData}>
-              {loadingData ? <><span className="spinner" style={{ width: 13, height: 13, borderTopColor: '#fff' }} /> Cargando</> : '↻'}
+              {loadingData
+                ? <><span className="spinner" style={{ width:13, height:13, borderTopColor:'#fff' }} /> Cargando</>
+                : '↻'}
             </button>
           </div>
         </div>
@@ -177,16 +206,15 @@ function Dashboard({ onSignOut, userEmail }) {
             <div className="no-branch">
               <span className="no-branch-icon">📊</span>
               <p>Esta sucursal no tiene widgets configurados</p>
-              <p style={{ fontSize: 12, color: 'var(--text-3)' }}>Configúralos desde el panel admin</p>
+              <p style={{ fontSize:12, color:'var(--text-3)' }}>Configúralos desde el panel admin</p>
             </div>
           ) : (
             <>
               {error && <div className="error-banner">⚠️ {error}</div>}
               <div className="dashboard-grid">
-                {(widgets ?? []).filter(Boolean).map(layout => {
+                {widgets.map(layout => {
                   if (!layout?.dashboard_widgets) return null
                   const w = layout.dashboard_widgets
-                  if (!w) return null
                   const colClass = WIDTH_COLS[w.width] ?? 'widget-col-3'
                   return (
                     <div key={layout.id} className={`widget-card ${colClass}`}>
@@ -196,8 +224,8 @@ function Dashboard({ onSignOut, userEmail }) {
                       </div>
                       <div className="widget-card-body">
                         {loadingData
-                          ? <div className="widget-skeleton" style={{ height: 120 }} />
-                          : <WidgetRenderer widget={w} data={data} liveData={liveData} />
+                          ? <div className="widget-skeleton" style={{ height:120 }} />
+                          : <WidgetRenderer layout={layout} data={data} liveData={liveData} />
                         }
                       </div>
                     </div>
@@ -215,10 +243,14 @@ function Dashboard({ onSignOut, userEmail }) {
 function SkeletonGrid() {
   return (
     <div className="dashboard-grid">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className={`widget-card ${i % 3 === 0 ? 'widget-col-2' : i % 3 === 1 ? 'widget-col-3' : 'widget-col-3'}`}>
-          <div className="widget-card-header"><div className="widget-skeleton" style={{ height: 16, width: 120, borderRadius: 4 }} /></div>
-          <div className="widget-card-body"><div className="widget-skeleton" style={{ height: 140 }} /></div>
+      {Array.from({ length:6 }).map((_, i) => (
+        <div key={i} className={`widget-card ${i % 3 === 0 ? 'widget-col-2' : 'widget-col-3'}`}>
+          <div className="widget-card-header">
+            <div className="widget-skeleton" style={{ height:16, width:120, borderRadius:4 }} />
+          </div>
+          <div className="widget-card-body">
+            <div className="widget-skeleton" style={{ height:140 }} />
+          </div>
         </div>
       ))}
     </div>
