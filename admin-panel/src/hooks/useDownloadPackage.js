@@ -1,12 +1,12 @@
 import { useState } from 'react'
 
-const SERVER_URL    = import.meta.env.VITE_SERVER_URL
+const SERVER_URL = import.meta.env.VITE_SERVER_URL
 const DASHBOARD_KEY = import.meta.env.VITE_DASHBOARD_KEY
 
 export function useDownloadPackage() {
-  const [status,   setStatus]   = useState('idle')
+  const [status, setStatus] = useState('idle')
   const [progress, setProgress] = useState('')
-  const [error,    setError]    = useState(null)
+  const [error, setError] = useState(null)
 
   async function download(branch) {
     setStatus('downloading')
@@ -29,15 +29,18 @@ export function useDownloadPackage() {
       setProgress('Descargando...')
       setStatus('generating')
 
-      const blob = await res.blob()
-
       // Descargar el zip en el browser
-      const url  = URL.createObjectURL(blob)
+      const arrayBuffer = await res.arrayBuffer()
+      const blob = new Blob([arrayBuffer], { type: 'application/octet-stream' })
+
+      const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
-      link.href     = url
+      link.href = url
       link.download = `${branch.branch_id}-client.zip`
+      document.body.appendChild(link)
       link.click()
-      URL.revokeObjectURL(url)
+      document.body.removeChild(link)
+      setTimeout(() => URL.revokeObjectURL(url), 1000)
 
       setStatus('done')
       setProgress('')

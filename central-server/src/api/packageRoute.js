@@ -1,7 +1,7 @@
 const { supabase } = require('../utils/supabase')
-const { decrypt }  = require('../utils/crypto')
-const logger       = require('../utils/logger')
-const sql          = require('mssql')
+const { decrypt } = require('../utils/crypto')
+const logger = require('../utils/logger')
+const sql = require('mssql')
 
 function registerPackageRoute(fastify) {
 
@@ -15,7 +15,7 @@ function registerPackageRoute(fastify) {
       .eq('branch_id', branchId)
       .single()
 
-    if (!branch)        return reply.code(404).send({ error: `Sucursal "${branchId}" no encontrada` })
+    if (!branch) return reply.code(404).send({ error: `Sucursal "${branchId}" no encontrada` })
     if (!branch.active) return reply.code(400).send({ error: `Sucursal "${branchId}" inactiva` })
 
     const { data: dbCfg } = await supabase
@@ -54,21 +54,21 @@ function registerPackageRoute(fastify) {
     const serverUrl = process.env.PUBLIC_URL || `http://localhost:${process.env.PORT || 3000}`
 
     const config = {
-      branchId:            branch.branch_id,
-      branchName:          branch.name,
-      apiKey:              branch.api_key,
-      serverUrl:           serverUrl.replace(/^http/, 'ws') + '/ws',
+      branchId: branch.branch_id,
+      branchName: branch.name,
+      apiKey: branch.api_key,
+      serverUrl: serverUrl.replace(/^http/, 'ws') + '/ws',
       syncIntervalSeconds: syncInterval,
-      enabledDataTypes:    enabledTypes,
+      enabledDataTypes: enabledTypes,
       queries,
       db: {
-        type:     branch.db_type,
-        server:   dbCfg.db_server,
-        port:     dbCfg.db_port,
+        type: branch.db_type,
+        server: dbCfg.db_server,
+        port: dbCfg.db_port,
         database: dbCfg.db_database,
-        user:     dbCfg.db_user,
+        user: dbCfg.db_user,
         password: dbPassword,
-        encrypt:  dbCfg.db_encrypt,
+        encrypt: dbCfg.db_encrypt,
         trustCert: dbCfg.db_trust_cert,
       },
     }
@@ -88,12 +88,12 @@ function registerPackageRoute(fastify) {
 
     // Armar el ZIP final con JSZip
     const JSZip = require('jszip')
-    const zip   = new JSZip()
+    const zip = new JSZip()
     const folder = zip.folder(`${branch.branch_id}-client`)
 
-    folder.file('branch-client.zip',    exeBuffer)
-    folder.file('config.json',          JSON.stringify(config, null, 2))
-    folder.file('install-service.bat',  INSTALL_BAT)
+    folder.file('branch-client.zip', exeBuffer)
+    folder.file('config.json', JSON.stringify(config, null, 2))
+    folder.file('install-service.bat', INSTALL_BAT)
     folder.file('uninstall-service.bat', UNINSTALL_BAT)
     folder.file('INSTALACION.md', [
       `# Branch Client`,
@@ -112,10 +112,11 @@ function registerPackageRoute(fastify) {
 
     logger.info(`Package generado para ${branchId}: ${(zipBuffer.length / 1024 / 1024).toFixed(1)}MB`)
 
-    reply
-      .header('Content-Type', 'application/zip')
+    return reply
+      .header('Content-Type', 'application/octet-stream')
       .header('Content-Disposition', `attachment; filename="${branch.branch_id}-client.zip"`)
-      .header('Content-Length', zipBuffer.length)
+      .header('Content-Length', String(zipBuffer.length))
+      .header('Access-Control-Expose-Headers', 'Content-Disposition')
       .send(zipBuffer)
   })
 
@@ -129,7 +130,7 @@ function registerPackageRoute(fastify) {
       .eq('branch_id', branchId)
       .single()
 
-    if (!branch)        return reply.code(404).send({ error: `Sucursal "${branchId}" no encontrada` })
+    if (!branch) return reply.code(404).send({ error: `Sucursal "${branchId}" no encontrada` })
     if (!branch.active) return reply.code(400).send({ error: `Sucursal "${branchId}" inactiva` })
 
     const { data: dbCfg } = await supabase
@@ -162,9 +163,11 @@ function registerPackageRoute(fastify) {
         apiKey: branch.api_key,
         serverUrl: serverUrl.replace(/^http/, 'ws') + '/ws',
         syncIntervalSeconds: syncInterval, enabledDataTypes: enabledTypes, queries,
-        db: { type: branch.db_type, server: dbCfg.db_server, port: dbCfg.db_port,
-              database: dbCfg.db_database, user: dbCfg.db_user, password: dbPassword,
-              encrypt: dbCfg.db_encrypt, trustCert: dbCfg.db_trust_cert },
+        db: {
+          type: branch.db_type, server: dbCfg.db_server, port: dbCfg.db_port,
+          database: dbCfg.db_database, user: dbCfg.db_user, password: dbPassword,
+          encrypt: dbCfg.db_encrypt, trustCert: dbCfg.db_trust_cert
+        },
       }
     }
   })
@@ -188,7 +191,7 @@ function registerTestDbRoute(fastify) {
     } catch (err) {
       return reply.code(400).send({ error: `Error: ${err.message}` })
     } finally {
-      if (pool) await pool.close().catch(() => {})
+      if (pool) await pool.close().catch(() => { })
     }
   })
 }
