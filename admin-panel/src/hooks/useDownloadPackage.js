@@ -49,13 +49,26 @@ export function useDownloadPackage() {
       const { config } = await configRes.json()
 
       setProgress('Descargando ejecutable...')
-      const { data: releaseZip, error: storageErr } = await supabase.storage.from('releases').download('branch-client.zip')
-      if (storageErr) throw new Error(`No se pudo descargar el ejecutable: ${storageErr.message}`)
-      // Descomprimir el zip descargado para sacar el exe
+
+      // URL firmada temporal — evita ERR_FAILED 206 con archivos grandes
+      const { data: signedData, error: signedErr } = await supabase
+        .storage
+        .from('releases')
+        .createSignedUrl('branch-client.zip', 120)
+
+      if (signedErr) throw new Error(`Error generando URL: ${signedErr.message}`)
+
+      const fetchRes = await fetch(signedData.signedUrl)
+      if (!fetchRes.ok) throw new Error(`Error descargando: ${fetchRes.status}`)
+
+      const releaseZip = await fetchRes.blob()
+
+      // Descomprimir para sacar el exe
       const JSZipInner = (await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm')).default
       const innerZip = await JSZipInner.loadAsync(releaseZip)
-      const exeBlob = await innerZip.file('branch-client.exe').async('blob')
-
+      const exeFile = innerZip.file('branch-client.exe')
+      if (!exeFile) throw new Error('No se encontró branch-client.exe dentro del zip.')
+      const exeBlob = await exeFile.async('blob')
       setProgress('Generando paquete...'); setStatus('generating')
 
       const zip = new JSZip()
