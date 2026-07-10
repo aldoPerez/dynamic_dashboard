@@ -184,11 +184,9 @@ function Dashboard({ onSignOut, userEmail }) {
               {error && <div className="error-banner">⚠️ {error}</div>}
               <div className="dashboard-grid">
                 {(widgets ?? []).filter(Boolean).map(layout => {
-                  console.log(layout);
                   if (!layout?.dashboard_widgets) return null
                   const w = layout.dashboard_widgets
                   if (!w) return null
-                  console.log(w);
                   const colClass = WIDTH_COLS[w.width] ?? 'widget-col-3'
                   return (
                     <div key={layout.id} className={`widget-card ${colClass}`}>
