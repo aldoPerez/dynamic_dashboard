@@ -1,0 +1,28 @@
+{
+  "branchId": "SUC-001",
+  "branchName": "Sucursal Centro",
+  "apiKey": "GENERADA-DESDE-EL-PANEL",
+  "serverUrl": "wss://tu-servidor.railway.app/ws",
+  "syncIntervalSeconds": 30,
+  "enabledDataTypes": [
+    "resumen_ventas",
+    "ventas_forma_pago",
+    "ventas_servicio",
+    "ventas_tipo",
+    "top_productos",
+    "cancelaciones",
+    "tendencia_diaria",
+    "mesas_estado"
+  ],
+  "queries": {},
+  "db": {
+    "type": "sqlserver",
+    "server": "localhost\\SQLEXPRESS",
+    "port": 1433,
+    "database": "NombreBD",
+    "user": "sa",
+    "password": "GENERADA-DESDE-EL-PANEL",
+    "encrypt": false,
+    "trustCert": true
+  }
+}

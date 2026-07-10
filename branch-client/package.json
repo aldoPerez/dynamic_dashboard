@@ -1,0 +1,21 @@
+{
+  "name": "branch-client",
+  "version": "2.0.0",
+  "main": "src/client.js",
+  "scripts": {
+    "start": "node src/client.js",
+    "build:win": "pkg . --targets node18-win-x64 --out-path dist --output branch-client.exe"
+  },
+  "dependencies": {
+    "mssql":  "^10.0.4",
+    "mysql2": "^3.9.0",
+    "pg":     "^8.11.0",
+    "ws":     "^8.16.0"
+  },
+  "devDependencies": { "pkg": "^5.8.1" },
+  "pkg": {
+    "scripts": "src/**/*.js",
+    "targets": ["node18-win-x64"],
+    "outputPath": "dist"
+  }
+}

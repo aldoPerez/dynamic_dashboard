@@ -1,0 +1,14 @@
+node_modules/
+**/node_modules/
+.env
+**/.env
+!**/.env.example
+dist/
+**/dist/
+*.exe
+branch-client/dist/
+logs/
+*.log
+.DS_Store
+Thumbs.db
+.vercel/

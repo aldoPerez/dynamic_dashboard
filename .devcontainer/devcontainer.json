@@ -1,0 +1,16 @@
+{
+  "name": "Ventas Tiempo Real",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:18",
+  "forwardPorts": [3000, 5173],
+  "portsAttributes": {
+    "3000": { "label": "Central Server", "onAutoForward": "notify" },
+    "5173": { "label": "Admin Panel",    "onAutoForward": "openBrowser" }
+  },
+  "postCreateCommand": "npm install --prefix admin-panel && npm install --prefix central-server && npm install --prefix branch-client",
+  "customizations": {
+    "vscode": {
+      "extensions": ["dbaeumer.vscode-eslint","esbenp.prettier-vscode"],
+      "settings": { "editor.formatOnSave": true }
+    }
+  }
+}
