@@ -1,7 +1,7 @@
-const registry     = require('./registry')
+const registry = require('./registry')
 const queryManager = require('./queryManager')
-const auth         = require('../utils/auth')
-const logger       = require('../utils/logger')
+const auth = require('../utils/auth')
+const logger = require('../utils/logger')
 const { broadcastConnection } = require('../api/connectionsRoute')
 
 function registerWebSocket(fastify) {
@@ -10,22 +10,22 @@ function registerWebSocket(fastify) {
     const socket = connection.socket
 
     const branchId = req.headers['x-branch-id']
-    const apiKey   = req.headers['x-api-key']
+    const apiKey = req.headers['x-api-key']
 
     if (!auth.validate(branchId, apiKey)) {
-      socket.send(JSON.stringify({ type:'ERROR', code:'AUTH_FAILED', message:'API key inválida' }))
+      socket.send(JSON.stringify({ type: 'ERROR', code: 'AUTH_FAILED', message: 'API key inválida' }))
       socket.close()
       return
     }
 
     socket.on('message', raw => handleMessage(socket, raw.toString()))
-    socket.on('close',   ()  => handleClose(branchId))
-    socket.on('error',   err => logger.error(`WS [${branchId}]: ${err.message}`))
+    socket.on('close', () => handleClose(branchId))
+    socket.on('error', err => logger.error(`WS [${branchId}]: ${err.message}`))
 
     // Ping cada 30s para mantener conexión viva
     const ping = setInterval(() => {
       if (socket.readyState === socket.OPEN) {
-        socket.send(JSON.stringify({ type:'PING', timestamp: Date.now() }))
+        socket.send(JSON.stringify({ type: 'PING', timestamp: Date.now() }))
       }
     }, 30_000)
 
@@ -40,24 +40,24 @@ function handleMessage(socket, raw) {
   switch (msg.type) {
     case 'REGISTER':
       registry.register(msg.branchId, {
-        branchName:   msg.branchName,
-        dbType:       msg.dbType,
-        version:      msg.version,
+        branchName: msg.branchName,
+        dbType: msg.dbType,
+        version: msg.version,
         capabilities: msg.capabilities || [],
       }, socket)
-      socket.send(JSON.stringify({ type:'REGISTERED', message:`Bienvenido ${msg.branchName}` }))
+      socket.send(JSON.stringify({ type: 'REGISTERED', message: `Bienvenido ${msg.branchName}` }))
       logger.info(`Registrada: ${msg.branchName} (${msg.branchId})`)
       broadcastConnection('connected', {
-        branchId:    msg.branchId,
-        branchName:  msg.branchName,
-        dbType:      msg.dbType,
+        branchId: msg.branchId,
+        branchName: msg.branchName,
+        dbType: msg.dbType,
         connectedAt: new Date().toISOString(),
       })
       break
 
     case 'SYNC_DATA':
       registry.updateLiveData(msg.branchId, msg.payload)
-      socket.send(JSON.stringify({ type:'ACK', ref:'SYNC_DATA' }))
+      socket.send(JSON.stringify({ type: 'ACK', ref: 'SYNC_DATA' }))
       break
 
     case 'SYNC_ERROR':
@@ -65,6 +65,7 @@ function handleMessage(socket, raw) {
       break
 
     case 'QUERY_RESULT':
+      logger.info(`QUERY_RESULT de ${msg.branchId}: ${JSON.stringify(msg.payload).slice(0, 200)}`)
       queryManager.receiveResult(msg.queryId, msg.branchId, msg.payload)
       break
 
@@ -86,8 +87,8 @@ function handleClose(branchId) {
   logger.info(`Desconectada: ${branchId}`)
   broadcastConnection('disconnected', {
     branchId,
-    branchName:      b?.branchName ?? branchId,
-    disconnectedAt:  new Date().toISOString(),
+    branchName: b?.branchName ?? branchId,
+    disconnectedAt: new Date().toISOString(),
   })
 }
 
