@@ -24,8 +24,13 @@ const TT_STYLE = {
  *   liveData  → datos del live sync (corteDia, mesas)
  */
 export default function WidgetRenderer({ layout, data, liveData }) {
-  const widget = layout
-  const dataType = widget?.data_types
+  const widget = layout.dashboard_widgets;
+  const dataType = widget.data_types;
+  console.log(layout)
+  console.log(layout.data_types)
+  console.log('Widget key:', dataType?.key)
+  console.log('Data keys:', Object.keys(data ?? {}))
+  console.log('Rows:', data?.[dataType?.key])
 
   if (!widget || !dataType) return <Empty text="Widget sin configurar" />
 

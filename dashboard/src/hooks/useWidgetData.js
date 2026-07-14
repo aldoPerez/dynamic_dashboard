@@ -44,6 +44,7 @@ export function useWidgetData({ branchId, widgets, dateFrom, dateTo }) {
 
     es.addEventListener('branch_data', e => {
       const { data: payload } = JSON.parse(e.data)
+      console.log('branch_data recibido:', JSON.stringify(payload))  // ← agregar
       setData(payload ?? {})
     })
     es.addEventListener('branch_error', e => {
