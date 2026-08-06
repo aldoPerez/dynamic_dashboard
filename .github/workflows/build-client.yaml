@@ -26,7 +26,7 @@ jobs:
 
       - name: Build exe
         working-directory: branch-client
-        run: npx pkg src/client.js --targets node18-win-x64 --out-path dist --output branch-client.exe
+        run: npx pkg src/client.js --targets node18-win-x64 --out-path dist && mv dist/client.exe dist/branch-client.exe
 
       - name: Verify exe size
         working-directory: branch-client/dist
