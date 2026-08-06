@@ -1,0 +1,57 @@
+name: Build Branch Client
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'branch-client/**'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: branch-client/package-lock.json
+
+      - name: Install dependencies
+        working-directory: branch-client
+        run: npm install
+
+      - name: Build exe
+        working-directory: branch-client
+        run: npx pkg src/client.js --targets node18-win-x64 --out-path dist --output branch-client.exe
+
+      - name: Verify exe size
+        working-directory: branch-client/dist
+        run: |
+          $size = (Get-Item branch-client.exe).Length / 1MB
+          Write-Host "Tamaño del exe: $([math]::Round($size, 1)) MB"
+          if ($size -lt 10) { throw "El exe es muy pequeño, algo salió mal" }
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: branch-client-exe
+          path: branch-client/dist/branch-client.exe
+          retention-days: 30
+
+      - name: Create Release
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: branch-client-${{ github.run_number }}
+          name: Branch Client v${{ github.run_number }}
+          files: branch-client/dist/branch-client.exe
+          body: |
+            Build automático desde commit ${{ github.sha }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
