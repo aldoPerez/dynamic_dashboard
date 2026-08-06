@@ -338,6 +338,8 @@ FROM Mesas ORDER BY Mesa',
 '[{"key":"mesa","label":"Mesa","type":"string"},{"key":"descripcion","label":"Descripción","type":"string"},{"key":"estatus","label":"Estatus","type":"string"},{"key":"mesero","label":"Mesero","type":"string"},{"key":"personas","label":"Personas","type":"number"}]',
 true, 8);
 
+ALTER TABLE dashboard_widgets ADD COLUMN IF NOT EXISTS kpi_icon TEXT;
+
 -- ============================================================
 -- SIGUIENTE PASO DESPUÉS DE EJECUTAR ESTE SCRIPT:
 --
