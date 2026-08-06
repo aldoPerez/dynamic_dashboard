@@ -31,7 +31,7 @@ jobs:
       - name: Verify exe size
         working-directory: branch-client/dist
         run: |
-          $size = (Get-Item branch-client.exe).Length / 1MB
+          $size = (Get-Item client.exe).Length / 1MB
           Write-Host "Tamaño del exe: $([math]::Round($size, 1)) MB"
           if ($size -lt 10) { throw "El exe es muy pequeño, algo salió mal" }
 
@@ -39,7 +39,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: branch-client-exe
-          path: branch-client/dist/branch-client.exe
+          path: branch-client/dist/client.exe
           retention-days: 30
 
       - name: Create Release
